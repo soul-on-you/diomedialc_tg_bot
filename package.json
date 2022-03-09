@@ -4,9 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ./js/bot.js",
+    "test": "node ./js/bot.js",
+    "start": "node ./dist/bot.js",
+    "launch": "nodemon ./dist/bot.js",
     "moex": "node ./js/moex.js",
+    "mariadb": "node ./js/mariadb.js",
     "cron": "node ./js/cron.js",
     "request": "node ./js/request.js"
   },
@@ -17,8 +19,10 @@
     "cron": "^1.8.2",
     "gulp-cli": "^2.3.0",
     "lodash": "^4.17.21",
+    "mariadb": "^3.0.0",
     "moex-api": "^1.0.3",
     "node-telegram-bot-api": "^0.56.0",
+    "nodemon": "^2.0.15",
     "request": "^2.88.2"
   },
   "devDependencies": {
