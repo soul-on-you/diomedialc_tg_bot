@@ -1,0 +1,33 @@
+{
+  "name": "mytg_bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node ./js/bot.js",
+    "moex": "node ./js/moex.js",
+    "cron": "node ./js/cron.js",
+    "request": "node ./js/request.js"
+  },
+  "author": "diomedialc",
+  "license": "ISC",
+  "browserslist": [
+    "> 0.1%"
+  ],
+  "dependencies": {
+    "@babel/polyfill": "^7.12.1",
+    "cron": "^1.8.2",
+    "moex-api": "^1.0.3",
+    "node-telegram-bot-api": "^0.56.0",
+    "request": "^2.88.2"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.15.7",
+    "@babel/core": "^7.15.8",
+    "@babel/preset-env": "^7.15.8",
+    "babel-loader": "^8.2.3",
+    "core-js": "^3.19.0",
+    "webpack-cli": "^4.9.1"
+  }
+}
