@@ -2,9 +2,9 @@
 // import { CronJob as Cron } from "cron";
 // import MoexAPI from "moex-api";
 
-const TelegramBot = require("node-telegram-bot-api");
-const Cron = require("cron").CronJob;
-const MoexAPI = require("moex-api");
+import TelegramBot from "node-telegram-bot-api";
+import { CronJob as Cron } from "cron";
+import MoexAPI from "moex-api";
 
 const token = "5249821549:AAGxewR3c2FpadIT-0aqLvSMnrgaRpHfyZw";
 let telegramID;
