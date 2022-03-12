@@ -1,43 +1,70 @@
-// import MoexAPI from "moex-api";
-const MoexAPI = require("moex-api");
+import MoexAPI from "moex-api";
+import { formatterRUB, formatterUSD } from "./formaters.js";
 
 const moexApi = new MoexAPI();
 
-// moexApi.securityMarketData("USD000UTSTOM").then((security) => {
-//   console.log(security.node.last); // e.g. 64.04
-//   console.log(security);
-// });
-const formatterUSD = new Intl.NumberFormat("en-US", {
-  style: "currency",
-  currency: "USD",
-  minimumFractionDigits: 2,
-  // the default value for minimumFractionDigits depends on the currency
-  // and is usually already 2
-});
+// const MoexUsdRub = () => {
+//   moexApi
+//     .securityMarketData("USD000UTSTOM")
+//     .then((security) => {
+//       // const mes = `Компания ${security.securityInfo.SECNAME}\nАкции ${security.securityInfo.SHORTNAME}\nТикер ${security.SECID}\nЦена ${security.securityInfo.PREVWAPRICE}\nСтатус торгов ${security.TRADINGSTATUS}\nОбъем торгов ${security.VOLTODAY}`;
+//       const pair = `Пара ${security.securityInfo.SECNAME.split(" ")[2]}`;
+//       const current = `Текущая цена ${formatterRUB.format(security.node.last)}`;
+//       const delta = `Изменение курса ${
+//         security.CHANGE > 0 ? "+" : ""
+//       }${formatterRUB.format(security.CHANGE)}`;
+//       const ruVal = `Объем в рублях: ${formatterRUB.format(
+//         security.VALTODAY_RUR
+//       )}`;
+//       const usdVal = `Объем в валюте: ${formatterUSD.format(
+//         security.VOLTODAY
+//       )}`;
+//       const mes =
+//         pair + "\n" + current + "\n" + delta + "\n" + ruVal + "\n" + usdVal;
+//       console.log(mes);
+//       bot.sendMessage(telegramID, mes);
+//     })
+//     .catch((security) => {
+//       console.log(security);
+//       console.log("Error!");
+//     });
+// };
 
-const formatterRUB = new Intl.NumberFormat("ru-RU", {
-  style: "currency",
-  currency: "RUB",
-  minimumFractionDigits: 2,
-});
+// "USD000UTSTOM"
 
-moexApi.securityMarketData("USD000UTSTOM").then((security) => {
-  //   await console.log("security node: ");
-  // const mes = `Компания ${security.securityInfo.SECNAME}\nАкции ${security.securityInfo.SHORTNAME}\nТикер ${security.SECID}\nЦена ${security.securityInfo.PREVWAPRICE}\nСтатус торгов ${security.TRADINGSTATUS}\nОбъем торгов ${security.VOLTODAY}`;
-  // console.log(mes);
-  console.log(security);
-  // console.log(security.securityInfo.SECNAME.split(" ")[2]);
-  const pair = `Пара ${security.securityInfo.SECNAME.split(" ")[2]}`;
-  const current = `Текущая цена ${formatterRUB.format(security.node.last)}`;
-  const delta = `Изменение курса ${
-    security.CHANGE > 0 ? "+" : ""
-  }${formatterRUB.format(security.CHANGE)}`;
-  const ruVal = `Объем в рублях: ${formatterRUB.format(security.VALTODAY_RUR)}`;
-  const usdVal = `Объем в валюте: ${formatterUSD.format(security.VOLTODAY)}`;
+const MoexCurrency = (currencyAPI) => {
+  moexApi
+    .securityMarketData(currencyAPI)
+    .then((security) => {
+      const pair = `Пара ${security.securityInfo.SECNAME.split(" ")[2]}`;
+      const current = `Текущая цена ${formatterRUB.format(security.node.last)}`;
+      const delta = `Изменение курса ${
+        security.CHANGE > 0 ? "+" : ""
+      }${formatterRUB.format(security.CHANGE)}`;
+      return `${pair}\n${current}\n${delta}\n`;
+      // bot.sendMessage(telegramID, mes);
+    })
+    .catch((error) => {
+      console.error(error);
+      return error;
+    });
+};
 
-  console.log(pair);
-  console.log(current);
-  console.log(delta);
-  console.log(ruVal);
-  console.log(usdVal);
-});
+const MoexStock = (stockAPI) => {
+  moexApi
+    .securityMarketData(stockAPI)
+    .then((security) => {
+      // const pair = `Пара ${security.securityInfo.SECNAME.split(" ")[2]}`;
+      // const current = `Текущая цена ${formatterRUB.format(security.node.last)}`;
+      // const delta = `Изменение курса ${
+      //   security.CHANGE > 0 ? "+" : ""
+      // }${formatterRUB.format(security.CHANGE)}`;
+      return `Компания ${security.securityInfo.SECNAME}\nАкции ${security.securityInfo.SHORTNAME}\nТикер ${security.SECID}\nЦена ${security.securityInfo.PREVWAPRICE}\nСтатус торгов ${security.TRADINGSTATUS}\nОбъем торгов ${security.VOLTODAY}`;
+    })
+    .catch((error) => {
+      console.error(error);
+      return error;
+    });
+};
+
+export { MoexCurrency, MoexStock };
