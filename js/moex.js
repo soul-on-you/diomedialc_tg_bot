@@ -35,12 +35,12 @@ const moexApi = new MoexAPI();
 const MoexCurrency = (currencyAPI) => {
   moexApi
     .securityMarketData(currencyAPI)
-    .then((security) => {
-      const pair = `Пара ${security.securityInfo.SECNAME.split(" ")[2]}`;
-      const current = `Текущая цена ${formatterRUB.format(security.node.last)}`;
+    .then((currency) => {
+      const pair = `Пара ${currency.securityInfo.SECNAME.split(" ")[2]}`;
+      const current = `Текущая цена ${formatterRUB.format(currency.node.last)}`;
       const delta = `Изменение курса ${
-        security.CHANGE > 0 ? "+" : ""
-      }${formatterRUB.format(security.CHANGE)}`;
+        currency.CHANGE > 0 ? "+" : ""
+      }${formatterRUB.format(currency.CHANGE)}`;
       return `${pair}\n${current}\n${delta}\n`;
       // bot.sendMessage(telegramID, mes);
     })
@@ -50,9 +50,9 @@ const MoexCurrency = (currencyAPI) => {
     });
 };
 
-const MoexStock = (stockAPI) => {
+const MoexSecurities = (securitiesAPI) => {
   moexApi
-    .securityMarketData(stockAPI)
+    .securityMarketData(securitiesAPI)
     .then((security) => {
       // const pair = `Пара ${security.securityInfo.SECNAME.split(" ")[2]}`;
       // const current = `Текущая цена ${formatterRUB.format(security.node.last)}`;
@@ -67,4 +67,4 @@ const MoexStock = (stockAPI) => {
     });
 };
 
-export { MoexCurrency, MoexStock };
+export { MoexCurrency, MoexSecurities };
