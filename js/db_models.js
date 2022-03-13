@@ -32,8 +32,13 @@ export const UserСurrencies = sequelize.define("UserСurrencies", {
     type: DataTypes.INTEGER,
     primaryKey: true,
     unique: true,
-    required: true,
+    autoIncrement: true,
     allowNull: false,
+  },
+  chatID: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    required: true,
     references: {
       model: "Users",
       key: "chatID",
@@ -41,8 +46,12 @@ export const UserСurrencies = sequelize.define("UserСurrencies", {
   },
   currencyID: {
     type: DataTypes.INTEGER,
-    unique: true,
     allowNull: false,
+    required: true,
+    references: {
+      model: "Сurrencies",
+      key: "id",
+    },
   },
 });
 
@@ -52,19 +61,17 @@ export const Сurrencies = sequelize.define("Сurrencies", {
     primaryKey: true,
     unique: true,
     allowNull: false,
-    required: true,
-    references: {
-      model: "UserСurrencies",
-      key: "currencyID",
-    },
+    autoIncrement: true,
   },
   currencyName: {
     type: DataTypes.STRING(7),
     allowNull: false,
+    unique: true,
   },
   currencyAPI: {
     type: DataTypes.STRING(20),
     allowNull: false,
+    unique: true,
   },
 });
 
