@@ -8,6 +8,7 @@ import {
   Users as UsersModel,
   UserСurrencies as UserСurrenciesModel,
   Сurrencies as CurrencyModel,
+  UserMessages as UserMessagesModel,
 } from "./db_models";
 import BotOptions from "./bot_options";
 
@@ -27,6 +28,7 @@ const start = async () => {
     { command: "/start", description: "Авторизировать бота" },
     { command: "/run", description: "Запуск бота" },
     { command: "/action", description: "Выбор действия" },
+    { command: "/show", description: "Получить сообщение с котировками" },
     { command: "/wait", description: "Остановить бота" },
     { command: "/stop", description: "Отключить бота" },
   ]);
@@ -60,7 +62,8 @@ const start = async () => {
         `Привет! ${msg.from.first_name} ${msg.from.last_name}`
       );
     }
-
+    if (msg.text == "/run") {
+    }
     if (msg.text == "/action") {
       try {
         const user = await UsersModel.findOne({ where: { chatID: chatID } });
@@ -82,6 +85,57 @@ const start = async () => {
         await console.error(`${eMsg}\n${e}\n`);
         return bot.sendMessage(chatID, eMsg);
       }
+    }
+    if (msg.text == "/show") {
+      try {
+        // await UserMessagesModel.create({ chatID: chatID, messageID: });
+        return bot
+          .sendMessage(
+            chatID,
+            `Отслеживание для ${msg.from.first_name} ${msg.from.last_name}`
+          )
+          .then(async (message) => {
+            console.log(message);
+            const UserMessage = await UserMessagesModel.findOne({
+              where: { chatID: chatID },
+            });
+            if (UserMessage === null) {
+              try {
+                return UserMessagesModel.create({
+                  chatID: chatID,
+                  messageID: message.message_id,
+                });
+              } catch (e) {
+                const eMsg = await "Подключение к БД не выполнилось!\n";
+                await console.error(`${eMsg}\n${e}\n`);
+                return bot.sendMessage(chatID, eMsg);
+              }
+            } else {
+              try {
+                UserMessage.messageID = await message.message_id;
+                return UserMessage.save();
+              } catch (e) {
+                const eMsg = await "Подключение к БД не выполнилось!\n";
+                await console.error(`${eMsg}\n${e}\n`);
+                return bot.sendMessage(chatID, eMsg);
+              }
+            }
+          });
+      } catch (e) {
+        if (e.name == "SequelizeUniqueConstraintError") {
+          console.error(e);
+        } else {
+          const eMsg =
+            await "Неудалось создать запись нового пользователя в БД! попробуйте позже!\n";
+          await console.error(`${eMsg}\n${chatID}\n${e}\n`);
+          console.log(e.name);
+          return bot.sendMessage(chatID, eMsg);
+        }
+      }
+    }
+    if (msg.text == "/wait") {
+    }
+    if (msg.text == "/stop") {
     }
 
     await console.log("STATES:\n", states);
@@ -425,6 +479,114 @@ const start = async () => {
       }
     }
 
+    if (data == "showUnfollowedCurrency") {
+      try {
+        const userCurrency = await (
+          await UserСurrenciesModel.findAll({ where: { chatID: chatID } })
+        ).map((row) => row.currencyID);
+        console.log(userCurrency);
+
+        const unfollowedCurrency = await (
+          await CurrencyModel.findAll()
+        )
+          .filter((currency) => !userCurrency.includes(currency.id))
+          .map((currency) => {
+            return [
+              {
+                text: currency.currencyName,
+                callback_data: currency.id,
+              },
+            ];
+          });
+
+        const unfollowedCurrencyOptions = await {
+          reply_markup: JSON.stringify({
+            inline_keyboard: [...unfollowedCurrency],
+          }),
+        };
+
+        states[chatID] = await {
+          runtime: "callback_data",
+          command: "addUnfollowedCurrency",
+        };
+
+        // console.log(unfollowedCurrencyOptions);
+        // console.log(BotOptions.adminActionEditCurrencies);
+        return bot.editMessageText(
+          "Выберите валюту которую хотите отслеживать",
+          {
+            chat_id: chatID,
+            message_id: messageID,
+            ...unfollowedCurrencyOptions,
+          }
+        );
+      } catch (e) {
+        const eMsg = await "Подключение к БД не выполнилось!\n";
+        await console.error(`${eMsg}\n${e}\n`);
+        await bot.sendMessage(chatID, eMsg);
+        return bot.editMessageText("Что вы хотите добавить в отслеживаемые", {
+          chat_id: chatID,
+          message_id: messageID,
+          ...BotOptions.allActionShowAllUnfollowed,
+        });
+      }
+    }
+    if (data == "showUnfollowedSecurity") {
+    }
+
+    if (data == "showFollowedCurrency") {
+      try {
+        const userCurrency = await (
+          await UserСurrenciesModel.findAll({ where: { chatID: chatID } })
+        ).map((row) => row.currencyID);
+        console.log(userCurrency);
+
+        const followedCurrency = await (
+          await CurrencyModel.findAll()
+        )
+          .filter((currency) => userCurrency.includes(currency.id))
+          .map((currency) => [
+            {
+              text: currency.currencyName,
+              callback_data: currency.id,
+            },
+          ]);
+
+        const followedCurrencyOptions = await {
+          reply_markup: JSON.stringify({
+            inline_keyboard: [...followedCurrency],
+          }),
+        };
+
+        states[chatID] = await {
+          runtime: "callback_data",
+          command: "removeFollowedCurrency",
+        };
+
+        // console.log(unfollowedCurrencyOptions);
+        // console.log(BotOptions.adminActionEditCurrencies);
+        return bot.editMessageText(
+          "Выберите валюту которую хотите перестать отслеживать",
+          {
+            chat_id: chatID,
+            message_id: messageID,
+            ...followedCurrencyOptions,
+          }
+        );
+      } catch (e) {
+        const eMsg = await "Подключение к БД не выполнилось!\n";
+        await console.error(`${eMsg}\n${e}\n`);
+        await bot.sendMessage(chatID, eMsg);
+        return bot.editMessageText("Что вы хотите добавить в отслеживаемые", {
+          chat_id: chatID,
+          message_id: messageID,
+          ...BotOptions.allActionShowAllUnfollowed,
+        });
+      }
+    }
+    if (data == "showFollowedSecurity") {
+    }
+
     if (states[chatID] && states[chatID].runtime == "callback_data") {
       if (states[chatID].command == "editCurrency") {
         states[chatID] = await {
@@ -457,6 +619,66 @@ const start = async () => {
             await "Неудалось обратиться к БД для редактирования валютной пары!\n";
           await console.error(`${eMsg}\n${e}\n`);
           return bot.sendMessage(chatID, eMsg);
+        }
+      }
+
+      if (states[chatID].command == "addUnfollowedCurrency") {
+        try {
+          console.log(data);
+          await UserСurrenciesModel.create({
+            chatID: chatID,
+            currencyID: data,
+          });
+          // return bot.
+          return bot.editMessageText("Что вы хотите добавить в отслеживаемые", {
+            chat_id: chatID,
+            message_id: messageID,
+            ...BotOptions.allActionShowAllUnfollowed,
+          });
+        } catch (e) {
+          if (e.name == "SequelizeUniqueConstraintError") {
+            console.error(e);
+          } else {
+            const eMsg =
+              await "Неудалось создать запись нового пользователя в БД! попробуйте позже!\n";
+            await console.error(`${eMsg}\n${chatID}\n${e}\n`);
+            console.log(e.name);
+            return bot.sendMessage(chatID, eMsg);
+          }
+        }
+      }
+      if (states[chatID].command == "addUnfollowedSecurity") {
+      }
+      if (states[chatID].command == "removeFollowedCurrency") {
+        try {
+          // await UserСurrenciesModel.create({
+          //   chatID: chatID,
+          //   currencyID: data,
+          // });
+          // return bot.
+          const userCurrency = await UserСurrenciesModel.findOne({
+            where: { chatID: chatID, currencyID: data },
+          });
+          console.log(userCurrency);
+          userCurrency.destroy();
+          return bot.editMessageText(
+            "Что вы хотите добавить в перестать отслеживать",
+            {
+              chat_id: chatID,
+              message_id: messageID,
+              ...BotOptions.allActionShowAllUnfollowed,
+            }
+          );
+        } catch (e) {
+          if (e.name == "SequelizeUniqueConstraintError") {
+            console.error(e);
+          } else {
+            const eMsg =
+              await "Неудалось создать запись нового пользователя в БД! попробуйте позже!\n";
+            await console.error(`${eMsg}\n${chatID}\n${e}\n`);
+            console.log(e.name);
+            return bot.sendMessage(chatID, eMsg);
+          }
         }
       }
     }
