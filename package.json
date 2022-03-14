@@ -9,7 +9,8 @@
     "moex": "babel-node ./units/moex.js",
     "mariadb": "babel-node ./units/mariadb.js",
     "cron": "babel-node ./units/cronCall.js",
-    "request": "babel-node ./units/request.js"
+    "request": "babel-node ./units/request.js",
+    "formatters": "babel-node ./units/currencyFormatter.js"
   },
   "author": "diomedialc",
   "license": "ISC",
