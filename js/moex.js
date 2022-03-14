@@ -1,5 +1,5 @@
 import MoexAPI from "moex-api";
-import { formatterRUB, formatterUSD } from "./formaters.js";
+import Formatters from "./formaters.js";
 
 const moexApi = new MoexAPI();
 
@@ -30,19 +30,38 @@ const moexApi = new MoexAPI();
 //     });
 // };
 
-// "USD000UTSTOM"
+// usd(Доллар США)
+// rub(Рубль России)
+// eur(Евро)
+// cny(Китайский Юань)
+// byn(Белорусский рубль)
+// hkd(Гонконгский доллар)
+// gbp(Фунт стерлингов)
+// try(Турецкая лира)
+// chf(Швейцарский франк)
+// jpy(Японская ена)
+// kzt(Казахские тенге)
+//"USD000UTSTOM"
 
 const MoexCurrency = (currencyAPI) => {
   moexApi
     .securityMarketData(currencyAPI)
     .then((currency) => {
-      const pair = `Пара ${currency.securityInfo.SECNAME.split(" ")[2]}`;
-      const current = `Текущая цена ${formatterRUB.format(currency.node.last)}`;
-      const delta = `Изменение курса ${
-        currency.CHANGE > 0 ? "+" : ""
-      }${formatterRUB.format(currency.CHANGE)}`;
-      return `${pair}\n${current}\n${delta}\n`;
+      // const pair = `Пара ${currency.securityInfo.SECNAME.split(" ")[2]}`;
+      // const current = `Текущая цена ${Formatters.pair.split("/")[1].format(currency.node.last)}`;
+      // const delta = `Изменение курса ${
+      //   currency.CHANGE > 0 ? "+" : ""
+      // }${Formatters.pair.split(":")[1].format(currency.CHANGE)}`;
+      // return `${pair}\n${current}\n${delta}\n`;
       // bot.sendMessage(telegramID, mes);
+      const pair = currency.securityInfo.SECNAME.split(" ")[2];
+      const formatter = Formatters.pair.split("/")[1];
+      // const current = formatter.format(currency.node.last);
+      return `Пара ${pair}\nТекущая цена ${formatter.format(
+        currency.node.last
+      )}\nИзменение курса ${
+        currency.CHANGE > 0 ? "📈 +" : "📉 "
+      }${formatter.format(currency.CHANGE)}`;
     })
     .catch((error) => {
       console.error(error);
