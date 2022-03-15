@@ -10,7 +10,8 @@
     "mariadb": "babel-node ./units/mariadb.js",
     "cron": "babel-node ./units/cronCall.js",
     "request": "babel-node ./units/request.js",
-    "formatters": "babel-node ./units/currencyFormatter.js"
+    "formatters": "babel-node ./units/currencyFormatter.js",
+    "cron-moex": "nodemon --exec babel-node ./js/cron-moex.js"
   },
   "author": "diomedialc",
   "license": "ISC",
