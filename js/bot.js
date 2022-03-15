@@ -63,6 +63,26 @@ const start = async () => {
       );
     }
     if (msg.text == "/run") {
+      try {
+        const user = await UsersModel.findOne({ where: { chatID: chatID } });
+        // await UserMessagesModel.create({ chatID: chatID, messageID: });
+        if (user === null) {
+          return bot.sendMessage(
+            chatID,
+            "Для начала работы введите команду /start"
+          );
+        } else {
+          user.status = await true;
+          await user.save();
+          return bot.sendMessage(chatID, `Бот запущен!`);
+        }
+      } catch (e) {
+        const eMsg =
+          await "Неудалось создать запись нового пользователя в БД! попробуйте позже!\n";
+        await console.error(`${eMsg}\n${chatID}\n${e}\n`);
+        console.log(e.name);
+        return bot.sendMessage(chatID, eMsg);
+      }
     }
     if (msg.text == "/action") {
       try {
@@ -92,7 +112,7 @@ const start = async () => {
         return bot
           .sendMessage(
             chatID,
-            `Отслеживание для ${msg.from.first_name} ${msg.from.last_name}`
+            `Формирование отчета...`
           )
           .then(async (message) => {
             console.log(message);
@@ -134,6 +154,25 @@ const start = async () => {
       }
     }
     if (msg.text == "/wait") {
+      try {
+        const user = await UsersModel.findOne({ where: { chatID: chatID } });
+        if (user === null) {
+          return bot.sendMessage(
+            chatID,
+            "Для начала работы введите команду /start"
+          );
+        } else {
+          user.status = await false;
+          await user.save();
+          return bot.sendMessage(chatID, `Бот остановлен!`);
+        }
+      } catch (e) {
+        const eMsg =
+          await "Неудалось создать запись нового пользователя в БД! попробуйте позже!\n";
+        await console.error(`${eMsg}\n${chatID}\n${e}\n`);
+        console.log(e.name);
+        return bot.sendMessage(chatID, eMsg);
+      }
     }
     if (msg.text == "/stop") {
     }
