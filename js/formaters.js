@@ -90,7 +90,7 @@ export {
 };
 
 export default {
-  RUB: formatterRUB,
+  РУБ: formatterRUB,
   USD: formatterUSD,
   EUR: formatterEUR,
   CNY: formatterCNY,

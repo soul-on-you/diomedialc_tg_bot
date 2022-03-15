@@ -43,7 +43,7 @@ const moexApi = new MoexAPI();
 // kzt(Казахские тенге)
 //"USD000UTSTOM"
 
-const MoexCurrency = (currencyAPI) => {
+const MoexCurrency = (currencyAPI, currencyName, currencyData) => {
   moexApi
     .securityMarketData(currencyAPI)
     .then((currency) => {
@@ -54,18 +54,28 @@ const MoexCurrency = (currencyAPI) => {
       // }${Formatters.pair.split(":")[1].format(currency.CHANGE)}`;
       // return `${pair}\n${current}\n${delta}\n`;
       // bot.sendMessage(telegramID, mes);
+      // console.log(currency);
       const pair = currency.securityInfo.SECNAME.split(" ")[2];
-      const formatter = Formatters.pair.split("/")[1];
+      // pairS = pair
+      // console.log(pair);
+      // console.log(pair.split("/")[1]);
+      const formatter = Formatters[pair.split("/")[1]];
+      // console.log(pair);
+      // console.log(formatter);
       // const current = formatter.format(currency.node.last);
-      return `Пара ${pair}\nТекущая цена ${formatter.format(
+      const ans = `Пара ${pair}\nТекущая цена ${formatter.format(
         currency.node.last
       )}\nИзменение курса ${
         currency.CHANGE > 0 ? "📈 +" : "📉 "
       }${formatter.format(currency.CHANGE)}`;
+      // console.log(ans);
+      currencyData[currencyName] = ans;
+      // console.log(currencyData);
+      // return ans;
     })
     .catch((error) => {
       console.error(error);
-      return error;
+      // return error;
     });
 };
 
