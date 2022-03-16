@@ -11,10 +11,179 @@ import {
   UserMessages as UserMessagesModel,
 } from "./db_models";
 import BotOptions from "./bot_options";
+import { MoexCurrencyUpdateTask } from "./cron-moex";
 
 const bot = new TelegramBot(token, { polling: true });
 
 const states = {};
+const users = {};
+const currency = {};
+
+// const getUsers = async (users) => {
+//   try {
+//     return await (
+//       await UsersModel.findAll()
+//     )
+//       .filter((user) => user.status)
+//       .map(async (user) => {
+//         await (
+//           await UserСurrenciesModel.findAll({
+//             where: { chatID: await user.chatID },
+//           })
+//         ).map(async (currecyLog) => {
+//           if (
+//             users[await user.chatID] == null //||
+//             // (await users[await user.chatID].currencies) == null
+//           ) {
+//             // await console.log(await users[await user.chatID]);
+//             console.log("cleared");
+//             users[user.chatID] = {
+//               ...users[user.chatID],
+//               currencies: [],
+//             };
+//             // await console.log(await users[await user.chatID]);
+//           }
+//           console.log(users[user.chatID]);
+
+//           users[user.chatID] = await {
+//             currencies: [
+//               // await // // ((await users[await user.chatID]) != null
+//               // ...users[await user.chatID].currency,
+//               // //   : null),
+//               ...users[user.chatID].currencies,
+//               await (
+//                 await CurrencyModel.findOne({
+//                   where: { id: await currecyLog.currencyID },
+//                 })
+//               ).currencyName,
+//             ],
+//           };
+//           return await users[user.chatID];
+//         });
+//       });
+//   } catch (e) {
+//     console.error(e);
+//   }
+// };
+
+const getUsers = async (users) => {
+  try {
+    return await (
+      await UsersModel.findAll()
+    )
+      .filter((user) => user.status)
+      .map(async (user) => {
+        users[user.chatID] = await {
+          ...users[user.chatID],
+          currencies: [],
+        };
+        await (
+          await UserСurrenciesModel.findAll({
+            where: { chatID: await user.chatID },
+          })
+        ).map(async (currecyLog) => {
+          // if (
+          //   users[user.chatID] == null //||
+          //   // (await users[await user.chatID].currencies) == null
+          // ) {
+          //   // await console.log(await users[await user.chatID]);
+          //   console.log("cleared");
+          //   users[user.chatID] = {
+          //     ...users[user.chatID],
+          //     currencies: [],
+          //   };
+          //   // await console.log(await users[await user.chatID]);
+          // }
+          const currencyName = await (
+            await CurrencyModel.findOne({
+              where: { id: currecyLog.currencyID },
+            })
+          ).currencyName;
+          users[user.chatID] = await {
+            ...users[user.chatID],
+            currencies: [
+              // await // // ((await users[await user.chatID]) != null
+              // ...users[await user.chatID].currency,
+              // //   : null),
+              ...users[user.chatID].currencies,
+              await currencyName,
+            ],
+          };
+          // return await users[user.chatID];
+        });
+      });
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const getUsersMessages = async (users) => {
+  try {
+    return (await UsersModel.findAll())
+      .filter((user) => user.status)
+      .map(async (user) => {
+        const messageID = await (
+          await UserMessagesModel.findOne({
+            where: { chatID: user.chatID },
+          })
+        )?.messageID;
+
+        // const message = await UserMessagesModel.findOne({
+        //   where: { chatID: user.chatID },
+        // });
+
+        // await UserMessagesModel.findOne({
+        //   where: { chatID: user.chatID },
+        // }).then((message) => console.log(message?.messageID));
+
+        // console.log(message.messageID);
+
+        users[user.chatID] = await {
+          ...users[user.chatID],
+          messageID: await messageID,
+        };
+
+        // const messageID = await UserMessagesModel.findOne({
+        //   where: { chatID: user.chatID },
+        // });
+        // await console.log(await messageID.messageID);
+        // return
+
+        // users[user.chatID] = await {
+        //   ...users[user.chatID],
+        //   messageID: await messageID,
+        // };
+
+        // await UserMessagesModel.findOne({
+        //   where: { chatID: user.chatID },
+        // }).then((userMessages) => {
+        //   console.log(userMessages.messageID);
+        // });
+
+        // users[user.chatID] = await {
+        //   ...users[user.chatID],
+        //   messageID: await messageID,
+        // };
+
+        // const currencyName = await (
+        //   await CurrencyModel.findOne({
+        //     where: { id: currecyLog.currencyID },
+        //   })
+        // ).currencyName;
+        // users[user.chatID] = await {
+        //   messageID: [
+        //     // await // // ((await users[await user.chatID]) != null
+        //     // ...users[await user.chatID].currency,
+        //     // //   : null),
+        //     ...users[user.chatID].messageID,
+        //     await currencyName,
+        //   ],
+        // };);
+      });
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 const start = async () => {
   try {
@@ -23,7 +192,56 @@ const start = async () => {
   } catch (e) {
     console.error("Подключение к БД не выполнилось!\n", e);
   }
+  /////DEBUG/////
+  await getUsers(users);
+  await getUsersMessages(users);
+  setTimeout(() => console.log("\nUser:\n", users), 3000);
+  const moexCurrencyUpdateTask = MoexCurrencyUpdateTask(
+    (await CurrencyModel.findAll()).map((currency) => {
+      return { name: currency.currencyName, API: currency.currencyAPI };
+    }),
+    currency,
+    10,
+    19
+  );
+  (await moexCurrencyUpdateTask).start();
+  setTimeout(() => console.log("\nUser:\n", currency), 7000);
+  // setTimeout(() => console.log("\nUser:\n", currency), 12000);
+  // setTimeout(() => console.log("\nUser:\n", currency), 17000);
+  // setTimeout(() => console.log("\nUser:\n", currency), 22000);
+  // setTimeout(() => console.log("\nUser:\n", currency), 27000);
+  // setTimeout(() => console.log("\nUser:\n", currency), 32000);
+  const UsersUpdateMessage = (/*users*/) => {
+    console.log("UsersUpdateMessageTask:\n");
+    for (const user in users) {
+      if (users[user].messageID) {
+        // console.log(users[user]);
+        // console.log(currency[users[user].currencies[0]]);
+        // console.log(users[user].currencies);
+        const message = users[user].currencies.reduce(
+          (message, currencyName) => `${message}\n\n${currency[currencyName]}`,
+          ""
+        );
+        console.log(message);
 
+        bot
+          .editMessageText(message, {
+            message_id: users[user].messageID,
+            chat_id: user,
+          })
+          .catch((error) =>
+            console.log(error?.response?.body?.description?.split(":")[1].trim())
+          );
+        // console.log(currency[])
+        // bot.editMessageText()
+      }
+    }
+  };
+
+  const UsersUpdateMessageTask = CronTask(UsersUpdateMessage, 10, 19);
+
+  setTimeout(() => UsersUpdateMessageTask.start(), 5000);
+  /////DEBUG/////
   bot.setMyCommands([
     { command: "/start", description: "Авторизировать бота" },
     { command: "/run", description: "Запуск бота" },
@@ -78,7 +296,7 @@ const start = async () => {
         }
       } catch (e) {
         const eMsg =
-          await "Неудалось создать запись нового пользователя в БД! попробуйте позже!\n";
+          await `Неудалось редактировать статус пользователя ${chatID} в БД! попробуйте позже!\n`;
         await console.error(`${eMsg}\n${chatID}\n${e}\n`);
         console.log(e.name);
         return bot.sendMessage(chatID, eMsg);
@@ -108,12 +326,28 @@ const start = async () => {
     }
     if (msg.text == "/show") {
       try {
+        const user = await UsersModel.findOne({ where: { chatID: chatID } });
+        // await UserMessagesModel.create({ chatID: chatID, messageID: });
+        if (user === null) {
+          return bot.sendMessage(
+            chatID,
+            "Для начала работы введите команду /start"
+          );
+        } else {
+          user.status = await true;
+          await user.save();
+        }
+      } catch (e) {
+        const eMsg =
+          await `Неудалось редактировать статус пользователя ${chatID} в БД! попробуйте позже!\n`;
+        await console.error(`${eMsg}\n${chatID}\n${e}\n`);
+        console.log(e.name);
+        return bot.sendMessage(chatID, eMsg);
+      }
+      try {
         // await UserMessagesModel.create({ chatID: chatID, messageID: });
         return bot
-          .sendMessage(
-            chatID,
-            `Формирование отчета...`
-          )
+          .sendMessage(chatID, `Формирование отчета...`)
           .then(async (message) => {
             console.log(message);
             const UserMessage = await UserMessagesModel.findOne({
@@ -146,7 +380,7 @@ const start = async () => {
           console.error(e);
         } else {
           const eMsg =
-            await "Неудалось создать запись нового пользователя в БД! попробуйте позже!\n";
+            await `Неудалось создать запись сообщения пользователя ${chatID} в БД! попробуйте позже!\n`;
           await console.error(`${eMsg}\n${chatID}\n${e}\n`);
           console.log(e.name);
           return bot.sendMessage(chatID, eMsg);
@@ -168,7 +402,7 @@ const start = async () => {
         }
       } catch (e) {
         const eMsg =
-          await "Неудалось создать запись нового пользователя в БД! попробуйте позже!\n";
+          await `Неудалось редактировать статус пользователя ${chatID} в БД! попробуйте позже!\n`;
         await console.error(`${eMsg}\n${chatID}\n${e}\n`);
         console.log(e.name);
         return bot.sendMessage(chatID, eMsg);
