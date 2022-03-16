@@ -18,6 +18,8 @@ const bot = new TelegramBot(token, { polling: true });
 const states = {};
 const users = {};
 const currency = {};
+const currencyFrom = 10,
+  currencyTo = 24;
 
 // const getUsers = async (users) => {
 //   try {
@@ -65,6 +67,39 @@ const currency = {};
 //     console.error(e);
 //   }
 // };
+const addUserShow = async (chatID, messageID) => {
+  // await (await UserСurrenciesModel.findAll({where: { chatID: chatID }})).map( async (currecyLog) => await users[chatID] = {
+  //   messageID: messageID
+  // });
+  // messageID: messageID, currencies: await [CurrencyModel.findAll({where: { id: currecyLog.currencyID})]
+  const CurIDs = await UserСurrenciesModel.findAll({
+    where: { chatID: chatID },
+  });
+  console.log(CurIDs);
+  const currenciesProm = CurIDs.map(async (currency) => {
+    await console.log(await currency.currencyID);
+    return await CurrencyModel.findOne({ where: { id: currency.currencyID } });
+  });
+  console.log(currenciesProm);
+  const currencies = await (
+    await Promise.all(currenciesProm)
+  ).map((currency) => currency.currencyName);
+  console.log(currencies);
+  users[chatID] = await {
+    messageID: messageID,
+    currencies: await currencies,
+  };
+  console.log(users[chatID]);
+
+  // .then((currencies) => {
+  //   console.log(currencies);
+  //   users[chatID] = {
+  //     messageID: messageID,
+  //     currencies: currencies,
+  //   };
+  //   console.log(users[chatID]);
+  // });
+};
 
 const getUsers = async (users) => {
   try {
@@ -201,11 +236,11 @@ const start = async () => {
       return { name: currency.currencyName, API: currency.currencyAPI };
     }),
     currency,
-    10,
-    19
+    currencyFrom,
+    currencyTo
   );
   (await moexCurrencyUpdateTask).start();
-  setTimeout(() => console.log("\nUser:\n", currency), 7000);
+  setTimeout(() => console.log("\nCurremcy:\n", currency), 7000);
   // setTimeout(() => console.log("\nUser:\n", currency), 12000);
   // setTimeout(() => console.log("\nUser:\n", currency), 17000);
   // setTimeout(() => console.log("\nUser:\n", currency), 22000);
@@ -230,7 +265,9 @@ const start = async () => {
             chat_id: user,
           })
           .catch((error) =>
-            console.log(error?.response?.body?.description?.split(":")[1].trim())
+            console.log(
+              error?.response?.body?.description?.split(":")[1].trim()
+            )
           );
         // console.log(currency[])
         // bot.editMessageText()
@@ -238,7 +275,11 @@ const start = async () => {
     }
   };
 
-  const UsersUpdateMessageTask = CronTask(UsersUpdateMessage, 10, 19);
+  const UsersUpdateMessageTask = CronTask(
+    UsersUpdateMessage,
+    currencyFrom,
+    currencyTo
+  );
 
   setTimeout(() => UsersUpdateMessageTask.start(), 5000);
   /////DEBUG/////
@@ -355,7 +396,7 @@ const start = async () => {
             });
             if (UserMessage === null) {
               try {
-                return UserMessagesModel.create({
+                await UserMessagesModel.create({
                   chatID: chatID,
                   messageID: message.message_id,
                 });
@@ -367,13 +408,14 @@ const start = async () => {
             } else {
               try {
                 UserMessage.messageID = await message.message_id;
-                return UserMessage.save();
+                await UserMessage.save();
               } catch (e) {
                 const eMsg = await "Подключение к БД не выполнилось!\n";
                 await console.error(`${eMsg}\n${e}\n`);
                 return bot.sendMessage(chatID, eMsg);
               }
             }
+            return addUserShow(chatID, message.message_id);
           });
       } catch (e) {
         if (e.name == "SequelizeUniqueConstraintError") {
@@ -483,6 +525,17 @@ const start = async () => {
           return bot.sendMessage(chatID, eMsg);
         }
       }
+
+      if (states[chatID].command == "sendGloabalMessage") {
+        for (const user in users) {
+          bot.sendMessage(user, msg.text);
+        }
+        return bot.editMessageText("Выберите действия с базой валютных пар", {
+          chat_id: chatID,
+          message_id: states[chatID].messageID,
+          ...BotOptions.adminActions,
+        });
+      }
     }
 
     return bot.sendMessage(chatID, "Я вас не понимаю");
@@ -550,6 +603,14 @@ const start = async () => {
         console.error(eMsg, e);
         return bot.sendMessage(chatID, eMsg);
       }
+    }
+    if (data == "sendGlobalMessage") {
+      states[chatID] = await {
+        command: "sendGloabalMessage",
+        runtime: "message",
+        messageID: messageID,
+      };
+      return bot.sendMessage(chatID, "Какое сообщение отправить всем:");
     }
 
     if (data == "editCurrency") {
@@ -768,6 +829,7 @@ const start = async () => {
               {
                 text: currency.currencyName,
                 callback_data: currency.id,
+                // callback_data: { id: currency.id, name: currency.currencyName },
               },
             ];
           });
@@ -822,6 +884,7 @@ const start = async () => {
             {
               text: currency.currencyName,
               callback_data: currency.id,
+              // callback_data: { id: currency.id, name: currency.currencyName },
             },
           ]);
 
@@ -835,7 +898,7 @@ const start = async () => {
           runtime: "callback_data",
           command: "removeFollowedCurrency",
         };
-
+        console.log("removeFollowedCurrency");
         // console.log(unfollowedCurrencyOptions);
         // console.log(BotOptions.adminActionEditCurrencies);
         return bot.editMessageText(
@@ -900,8 +963,24 @@ const start = async () => {
           console.log(data);
           await UserСurrenciesModel.create({
             chatID: chatID,
-            currencyID: data,
+            currencyID: data /*.id*/,
           });
+
+          await CurrencyModel.findOne({
+            where: { id: data },
+          }).then(
+            (currency) =>
+              (users[chatID] = {
+                ...users[chatID],
+                currencies: [
+                  ...users[chatID]?.currencies,
+                  currency.currencyName /*.name*/,
+                ],
+              })
+          );
+          // await console.log(await currencyName);
+
+          await console.log(await users);
           // return bot.
           return bot.editMessageText("Что вы хотите добавить в отслеживаемые", {
             chat_id: chatID,
@@ -929,17 +1008,37 @@ const start = async () => {
           //   currencyID: data,
           // });
           // return bot.
+          // console.log("callback removeFollowedCurrency");
           const userCurrency = await UserСurrenciesModel.findOne({
-            where: { chatID: chatID, currencyID: data },
+            where: { chatID: chatID, currencyID: data /*.id*/ },
           });
           console.log(userCurrency);
           userCurrency.destroy();
+
+          //const currencyName =
+          await CurrencyModel.findOne({
+            where: { id: data },
+          }).then(
+            (Currency) =>
+              (users[chatID] = {
+                ...users[chatID],
+                currencies: users[chatID].currencies.filter(
+                  (currency) => currency != Currency.currencyName /*.name*/
+                ),
+              })
+          );
+          //currencyName;
+          // console.log(currencyName);
+
+          console.log(users);
+          // console.log("MSG:\n", msg);
+
           return bot.editMessageText(
             "Что вы хотите добавить в перестать отслеживать",
             {
               chat_id: chatID,
               message_id: messageID,
-              ...BotOptions.allActionShowAllUnfollowed,
+              ...BotOptions.allActionShowFollowed,
             }
           );
         } catch (e) {
