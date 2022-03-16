@@ -43,8 +43,8 @@ const moexApi = new MoexAPI();
 // kzt(Казахские тенге)
 //"USD000UTSTOM"
 
-const MoexCurrency = (currencyAPI, currencyName, currencyData) => {
-  moexApi
+const MoexCurrency = async (currencyAPI, currencyName, currencyData) => {
+  await moexApi
     .securityMarketData(currencyAPI)
     .then((currency) => {
       // const pair = `Пара ${currency.securityInfo.SECNAME.split(" ")[2]}`;
@@ -79,8 +79,8 @@ const MoexCurrency = (currencyAPI, currencyName, currencyData) => {
     });
 };
 
-const MoexSecurities = (securitiesAPI) => {
-  moexApi
+const MoexSecurities = async (securitiesAPI) => {
+  await moexApi
     .securityMarketData(securitiesAPI)
     .then((security) => {
       // const pair = `Пара ${security.securityInfo.SECNAME.split(" ")[2]}`;
