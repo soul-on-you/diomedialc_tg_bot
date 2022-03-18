@@ -19,7 +19,7 @@ const states = {};
 const users = {};
 const currency = {};
 const currencyFrom = 10,
-  currencyTo = 24;
+  currencyTo = 19;
 
 // const getUsers = async (users) => {
 //   try {

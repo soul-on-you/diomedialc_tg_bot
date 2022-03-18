@@ -6,6 +6,8 @@
   "scripts": {
     "start": "babel-node ./js/bot.js",
     "launch": "nodemon --exec babel-node ./js/bot.js",
+    "build": "babel js/bot.js -o telegram_moex_bot.js",
+    "server": "pm2 -n telegram_moex_bot start npm  -- run start",
     "moex": "babel-node ./units/moex.js",
     "mariadb": "babel-node ./units/mariadb.js",
     "cron": "babel-node ./units/cronCall.js",
@@ -24,7 +26,7 @@
     "sequelize": "^6.17.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.17.5",
+    "@babel/core": "^7.17.7",
     "@babel/node": "^7.16.8",
     "@babel/polyfill": "^7.12.1",
     "@babel/preset-env": "^7.16.11",
