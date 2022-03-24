@@ -1,8 +1,23 @@
 {
   "name": "telegram_moex_bot",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Telegram bot for checking values of stock market",
   "main": "bot.js",
+  "bin": "./js/bot.js",
+  "keywords": [
+    "node-telegram-bot-api",
+    "telegram-bot",
+    "telegram"
+  ],
+  "homepage": "https://github.com/soul-on-you/diomedialc_tg_bot",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/soul-on-you/diomedialc_tg_bot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/soul-on-you/diomedialc_tg_bot.git",
+    "email": "rerpledday@gmail.com"
+  },
   "scripts": {
     "start": "babel-node ./js/bot.js",
     "launch": "nodemon --exec babel-node ./js/bot.js",
