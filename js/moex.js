@@ -7,7 +7,9 @@ const moexApi = new MoexAPI();
 //   moexApi
 //     .securityMarketData("USD000UTSTOM")
 //     .then((security) => {
-//       // const mes = `Компания ${security.securityInfo.SECNAME}\nАкции ${security.securityInfo.SHORTNAME}\nТикер ${security.SECID}\nЦена ${security.securityInfo.PREVWAPRICE}\nСтатус торгов ${security.TRADINGSTATUS}\nОбъем торгов ${security.VOLTODAY}`;
+//       // const mes = `Компания ${security.securityInfo.SECNAME}\nАкции
+//${security.securityInfo.SHORTNAME}\nТикер ${security.SECID}\nЦена ${security.securityInfo.PREVWAPRICE}\nСтатус торгов
+//${security.TRADINGSTATUS}\nОбъем торгов ${security.VOLTODAY}`;
 //       const pair = `Пара ${security.securityInfo.SECNAME.split(" ")[2]}`;
 //       const current = `Текущая цена ${formatterRUB.format(security.node.last)}`;
 //       const delta = `Изменение курса ${
@@ -79,21 +81,32 @@ const MoexCurrency = async (currencyAPI, currencyName, currencyData) => {
     });
 };
 
-const MoexSecurities = async (securitiesAPI) => {
+const MoexSecurity = async (
+  securitiesAPI,
+  securitiesName,
+  securitiesData
+) => {
   await moexApi
     .securityMarketData(securitiesAPI)
     .then((security) => {
-      // const pair = `Пара ${security.securityInfo.SECNAME.split(" ")[2]}`;
-      // const current = `Текущая цена ${formatterRUB.format(security.node.last)}`;
-      // const delta = `Изменение курса ${
-      //   security.CHANGE > 0 ? "+" : ""
-      // }${formatterRUB.format(security.CHANGE)}`;
-      return `Компания ${security.securityInfo.SECNAME}\nАкции ${security.securityInfo.SHORTNAME}\nТикер ${security.SECID}\nЦена ${security.securityInfo.PREVWAPRICE}\nСтатус торгов ${security.TRADINGSTATUS}\nОбъем торгов ${security.VOLTODAY}`;
+      const formatter = Formatters.РУБ;
+      const ans = `Акции ${security.node.friendlyTitle} [${
+        security.SECID
+      }]\nТекущая цена ${formatter.format(
+        security.node.last
+      )}\nИзменение курса ${
+        security.CHANGE > 0 ? "📈 +" : "📉 "
+      }${formatter.format(security.CHANGE)}`;
+      // console.log(ans);
+      securitiesData[securitiesName] = ans;
+      //return `Компания ${security.securityInfo.SECNAME}\nАкции
+      //${security.securityInfo.SHORTNAME}\nТикер ${security.SECID}\nЦена
+      //${security.securityInfo.PREVWAPRICE}\nСтатус торгов ${security.TRADINGSTATUS}
+      //\nОбъем торгов ${security.VOLTODAY}`;
     })
     .catch((error) => {
       console.error(error);
-      return error;
     });
 };
 
-export { MoexCurrency, MoexSecurities };
+export { MoexCurrency, MoexSecurity };
