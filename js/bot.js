@@ -2,24 +2,31 @@ import TelegramBot from "node-telegram-bot-api";
 import MoexAPI from "moex-api";
 import { CronTask } from "./cron_task";
 import { token } from "./bot_api_token";
-import { MoexCurrency, MoexSecurities } from "./moex";
+// import { MoexCurrency, MoexSecurity } from "./moex";
 import sequelize from "./db_connection";
 import {
   Users as UsersModel,
   UserСurrencies as UserСurrenciesModel,
   Сurrencies as CurrencyModel,
   UserMessages as UserMessagesModel,
+  Securities as SecurityModel,
+  UserSecurities as UserSecuritiesModel,
 } from "./db_models";
 import BotOptions from "./bot_options";
-import { MoexCurrencyUpdateTask } from "./cron-moex";
+import { MoexCurrencyUpdateTask, MoexSecurityUpdateTask } from "./cron-moex";
 
 const bot = new TelegramBot(token, { polling: true });
 
 const states = {};
 const users = {};
-const currency = {};
-const currencyFrom = 10,
+
+const currency = {},
+  currencyFrom = 10,
   currencyTo = 19;
+
+const security = {},
+  securityFrom = 10,
+  securityTo = 19;
 
 // const getUsers = async (users) => {
 //   try {
@@ -111,24 +118,42 @@ const getUsers = async (users) => {
         users[user.chatID] = await {
           ...users[user.chatID],
           currencies: [],
+          securities: [],
         };
+
+        // await (
+        //   await UserСurrenciesModel.findAll({
+        //     where: { chatID: await user.chatID },
+        //   })
+        // ).map(async (currecyLog) => {
+        //   const currencyName = await (
+        //     await CurrencyModel.findOne({
+        //       where: { id: currecyLog.currencyID },
+        //     })
+        //   ).currencyName;
+        //   users[user.chatID] = await {
+        //     ...users[user.chatID],
+        //     currencies: [...users[user.chatID].currencies, await currencyName],
+        //   };
+        // });
+
+        // await (await UserSecuritiesModel.findAll({ where: { chatID: user.chatID } }))
+        // .map(async (securityLog) => {
+        //   const securityName = await (
+        //     await SecurityModel.findOne({
+        //       where: { id: securityLog.securityID },
+        //     })
+        //   ).securityName;
+        //   users[user.chatID] = await {
+        //     ...users[user.chatID],
+        //     securities: [...users[user.chatID].securities, await securityName],
+        //   };
+        // });
         await (
           await UserСurrenciesModel.findAll({
             where: { chatID: await user.chatID },
           })
         ).map(async (currecyLog) => {
-          // if (
-          //   users[user.chatID] == null //||
-          //   // (await users[await user.chatID].currencies) == null
-          // ) {
-          //   // await console.log(await users[await user.chatID]);
-          //   console.log("cleared");
-          //   users[user.chatID] = {
-          //     ...users[user.chatID],
-          //     currencies: [],
-          //   };
-          //   // await console.log(await users[await user.chatID]);
-          // }
           const currencyName = await (
             await CurrencyModel.findOne({
               where: { id: currecyLog.currencyID },
@@ -136,15 +161,24 @@ const getUsers = async (users) => {
           ).currencyName;
           users[user.chatID] = await {
             ...users[user.chatID],
-            currencies: [
-              // await // // ((await users[await user.chatID]) != null
-              // ...users[await user.chatID].currency,
-              // //   : null),
-              ...users[user.chatID].currencies,
-              await currencyName,
-            ],
+            currencies: [...users[user.chatID].currencies, await currencyName],
           };
-          // return await users[user.chatID];
+        });
+
+        await (
+          await UserSecuritiesModel.findAll({
+            where: { chatID: await user.chatID },
+          })
+        ).map(async (securityLog) => {
+          const securityName = await (
+            await SecurityModel.findOne({
+              where: { id: securityLog.securityID },
+            })
+          ).securityName;
+          users[user.chatID] = await {
+            ...users[user.chatID],
+            securities: [...users[user.chatID].securities, await securityName],
+          };
         });
       });
   } catch (e) {
@@ -231,6 +265,7 @@ const start = async () => {
   await getUsers(users);
   await getUsersMessages(users);
   setTimeout(() => console.log("\nUser:\n", users), 3000);
+
   const moexCurrencyUpdateTask = MoexCurrencyUpdateTask(
     (await CurrencyModel.findAll()).map((currency) => {
       return { name: currency.currencyName, API: currency.currencyAPI };
@@ -239,25 +274,54 @@ const start = async () => {
     currencyFrom,
     currencyTo
   );
+
+  const moexSecurityUpdateTask = MoexSecurityUpdateTask(
+    (await SecurityModel.findAll()).map((security) => {
+      return { name: security.securityName, API: security.securityAPI };
+    }),
+    security,
+    securityFrom,
+    securityTo
+  );
+  (await moexSecurityUpdateTask).start();
   (await moexCurrencyUpdateTask).start();
-  setTimeout(() => console.log("\nCurremcy:\n", currency), 7000);
-  // setTimeout(() => console.log("\nUser:\n", currency), 12000);
+  setTimeout(() => console.log("\nCurrency:\n", currency), 7000);
+  setTimeout(() => console.log("\nSecurity:\n", security), 7000);
+  // setTimeout(() => console.log("\nSecurity:\n", security), 20000);
   // setTimeout(() => console.log("\nUser:\n", currency), 17000);
   // setTimeout(() => console.log("\nUser:\n", currency), 22000);
   // setTimeout(() => console.log("\nUser:\n", currency), 27000);
   // setTimeout(() => console.log("\nUser:\n", currency), 32000);
   const UsersUpdateMessage = (/*users*/) => {
-    console.log("UsersUpdateMessageTask:\n");
+    // console.log("UsersUpdateMessageTask:\n");
     for (const user in users) {
       if (users[user].messageID) {
         // console.log(users[user]);
         // console.log(currency[users[user].currencies[0]]);
         // console.log(users[user].currencies);
-        const message = users[user].currencies.reduce(
+        const messageCurrency = users[user].currencies.reduce(
           (message, currencyName) => `${message}\n\n${currency[currencyName]}`,
           ""
         );
-        console.log(message);
+
+        const messageSecurity = users[user].securities.reduce(
+          (message, securityName) => `${message}\n\n${security[securityName]}`,
+          ""
+        );
+
+        const currencyMessage = users[user].currencies.length > 0
+          ? `Валютные пары:\n${messageCurrency.trim()}\n\n`
+          : "";
+        const securityMessage = users[user].securities.length > 0
+          ? `Акции:\n${messageSecurity.trim()}`
+          : "";
+        const message = `${currencyMessage}${securityMessage}`;
+        // console.log(users[user].securities, securityMessage);
+        // console.log(!users[user].securities);
+        // console.log(users[user].securities == null);
+        // console.log(users[user].securities.length <= 0);
+        // console.log(!users[user].securities.length);
+        // console.log(!!users[user].securities.length);
 
         bot
           .editMessageText(message, {
@@ -277,8 +341,8 @@ const start = async () => {
 
   const UsersUpdateMessageTask = CronTask(
     UsersUpdateMessage,
-    currencyFrom,
-    currencyTo
+    Math.min(currencyFrom, securityFrom),
+    Math.max(currencyTo, securityFrom)
   );
 
   setTimeout(() => UsersUpdateMessageTask.start(), 5000);
@@ -514,6 +578,75 @@ const start = async () => {
             chat_id: chatID,
             message_id: messageID,
             ...BotOptions.adminActionEditCurrencies,
+          });
+        } catch (e) {
+          // ОШИБКИ:
+          // Редактирование на уже существующее SequelizeUniqueConstraintError
+          // Нарушение ограничения длинны SequelizeDatabaseError
+          const eMsg =
+            await "Неудалось обратиться к БД для редактирования валютной пары!\n";
+          await console.error(`${eMsg}\n${e}\n`);
+          return bot.sendMessage(chatID, eMsg);
+        }
+      }
+
+      if (states[chatID].command == "addSecurity") {
+        states[chatID].command = await "";
+        states[chatID].runtime = await "";
+        const [securityName, securityAPI] = await msg.text.split(":");
+        // await console.log(securityName, securityAPI);
+        try {
+          await SecurityModel.create({
+            securityName: securityName,
+            securityAPI: securityAPI,
+          });
+        } catch (e) {
+          if (e.name == "SequelizeUniqueConstraintError") {
+            console.error(e);
+          } else {
+            const eMsg =
+              await "Неудалось создать запись нового пользователя в БД!Подключение к БД не выполнилось!\n";
+            await console.error(`${eMsg}\n${e}\n`);
+            return bot.sendMessage(chatID, eMsg);
+          }
+        }
+        const messageID = await states[chatID].messageID;
+        states[chatID] = await {};
+
+        return bot.editMessageText("Выберите действия с базой валютных пар", {
+          chat_id: chatID,
+          message_id: messageID,
+          ...BotOptions.adminActionEditSecurities,
+        });
+      }
+
+      if (states[chatID].command == "editSecurity") {
+        states[chatID].command = await "";
+        states[chatID].runtime = await "";
+
+        try {
+          const security = await SecurityModel.findOne({
+            where: { securityName: states[chatID].securityName },
+          });
+          console.log(security);
+          const ans = await msg.text;
+          if (states[chatID].editableField == "Name") {
+            security.securityName = await ans;
+          } else if (states[chatID].editableField == "APIKey") {
+            security.securityAPI = await ans;
+          } else if (states[chatID].editableField == "All") {
+            [security.securityName, security.securityAPI] = await ans.split(
+              ":"
+            );
+          }
+          await security.save();
+          const messageID = await states[chatID].messageID;
+          states[chatID] = await {};
+
+          return bot.editMessageText("Выберите действия с базой валютных пар", {
+            chat_id: chatID,
+            message_id: messageID,
+            ...BotOptions.adminActionEditSecurities,
           });
         } catch (e) {
           // ОШИБКИ:
@@ -775,13 +908,152 @@ const start = async () => {
     }
 
     if (data == "addSecurity") {
+      // добаить проверку на админку и вынести в отдельную функцию
+      states[chatID] = await {
+        command: "addSecurity",
+        runtime: "message",
+        messageID: messageID,
+      };
+      return bot.editMessageText(
+        "Чтобы добавить валютную пару введите {пару:api_ключ}",
+        {
+          chat_id: chatID,
+          message_id: messageID,
+        }
+      );
     }
     if (data == "changeSecurity") {
+      // добаить проверку на админку и вынести в отдельную функцию
+      // states[chatID] = await "changeCurrency";
+      // return bot.editMessageText(
+      //   "Чтобы выбрать валютную пару для редактирования введите {пару}",
+      //   {
+      //     chat_id: chatID,
+      //     message_id: messageID,
+      //   }
+      // );
+      // const users = await (
+      //   await UsersModel.findAll()
+      // ).map((user) => user.dataValues);
+      // console.log(users);
+      const security = await (
+        await SecurityModel.findAll()
+      ).map((security) => security.dataValues.securityName);
+      const securityOPT = await security.map((security) => [
+        { text: security, callback_data: security },
+      ]);
+      const securityOptions = await {
+        reply_markup: JSON.stringify({
+          inline_keyboard: [...securityOPT],
+        }),
+      };
+      // console.log(security);
+      // console.log(securityOPT);
+      console.log(securityOptions);
+
+      states[chatID] = await {
+        command: "editSecurity",
+        runtime: "callback_data",
+        messageID: messageID,
+      };
+
+      return bot.editMessageText(
+        "Выберите пару которую хотите отредактировать",
+        {
+          chat_id: chatID,
+          message_id: messageID,
+          ...securityOptions,
+        }
+      );
+    }
+    if (data == "editSecurityName") {
+      states[chatID] = await {
+        ...states[chatID],
+        command: "editSecurity",
+        runtime: "message",
+        editableField: "Name",
+      };
+      console.log(states);
+      return bot.editMessageText("Введите новое название валютной пары:", {
+        chat_id: chatID,
+        message_id: messageID,
+      });
+    }
+    if (data == "editSecurityAPIKey") {
+      states[chatID] = await {
+        ...states[chatID],
+        command: "editSecurity",
+        runtime: "message",
+        editableField: "APIKey",
+      };
+      console.log(states);
+      return bot.editMessageText(
+        "Введите новое значение API ключа валютной пары:",
+        {
+          chat_id: chatID,
+          message_id: messageID,
+        }
+      );
+    }
+    if (data == "editSecurityAllFields") {
+      states[chatID] = await {
+        ...states[chatID],
+        command: "editSecurity",
+        runtime: "message",
+        editableField: "All",
+      };
+      console.log(states);
+      return bot.editMessageText(
+        "Введите новые значения полей валютной пары {пару:api_ключ}:",
+        {
+          chat_id: chatID,
+          message_id: messageID,
+        }
+      );
     }
     if (data == "removeSecurity") {
+      // добаить проверку на админку и вынести в отдельную функцию
+      // states[chatID] = await "changeCurrency";
+      // return bot.editMessageText(
+      //   "Чтобы выбрать валютную пару для редактирования введите {пару}",
+      //   {
+      //     chat_id: chatID,
+      //     message_id: messageID,
+      //   }
+      // );
+      const security = await (
+        await SecurityModel.findAll()
+      ).map((security) => security.dataValues.securityName);
+      const securityOPT = await security.map((security) => [
+        { text: security, callback_data: security },
+      ]);
+      const securityOptions = await {
+        reply_markup: JSON.stringify({
+          inline_keyboard: [...securityOPT],
+        }),
+      };
+      // console.log(security);
+      // console.log(securityOPT);
+      console.log(securityOptions);
+
+      states[chatID] = await {
+        command: "removeSecurity",
+        runtime: "callback_data",
+      };
+
+      return bot.editMessageText("Выберите пару которую хотите удалить", {
+        chat_id: chatID,
+        message_id: messageID,
+        ...securityOptions,
+      });
     }
 
     if (data == "backToAdminEditDB") {
+      return bot.editMessageText("Что вы хотите редактировать:", {
+        chat_id: chatID,
+        message_id: messageID,
+        ...BotOptions.adminActionEditDB,
+      });
     }
 
     if (data == "backToShowActions") {
@@ -867,6 +1139,57 @@ const start = async () => {
       }
     }
     if (data == "showUnfollowedSecurity") {
+      try {
+        const userSecurity = await (
+          await UserSecuritiesModel.findAll({ where: { chatID: chatID } })
+        ).map((row) => row.securityID);
+        console.log(userSecurity);
+
+        const unfollowedSecurity = await (
+          await SecurityModel.findAll()
+        )
+          .filter((security) => !userSecurity.includes(security.id))
+          .map((security) => {
+            return [
+              {
+                text: security.securityName,
+                callback_data: security.id,
+                // callback_data: { id: security.id, name: security.securityName },
+              },
+            ];
+          });
+
+        const unfollowedSecurityOptions = await {
+          reply_markup: JSON.stringify({
+            inline_keyboard: [...unfollowedSecurity],
+          }),
+        };
+
+        states[chatID] = await {
+          runtime: "callback_data",
+          command: "addUnfollowedSecurity",
+        };
+
+        // console.log(unfollowedSecurityOptions);
+        // console.log(BotOptions.adminActionEditSecurities);
+        return bot.editMessageText(
+          "Выберите валюту которую хотите отслеживать",
+          {
+            chat_id: chatID,
+            message_id: messageID,
+            ...unfollowedSecurityOptions,
+          }
+        );
+      } catch (e) {
+        const eMsg = await "Подключение к БД не выполнилось!\n";
+        await console.error(`${eMsg}\n${e}\n`);
+        await bot.sendMessage(chatID, eMsg);
+        return bot.editMessageText("Что вы хотите добавить в отслеживаемые", {
+          chat_id: chatID,
+          message_id: messageID,
+          ...BotOptions.allActionShowAllUnfollowed,
+        });
+      }
     }
 
     if (data == "showFollowedCurrency") {
@@ -921,6 +1244,55 @@ const start = async () => {
       }
     }
     if (data == "showFollowedSecurity") {
+      try {
+        const userSecurity = await (
+          await UserSecuritiesModel.findAll({ where: { chatID: chatID } })
+        ).map((row) => row.securityID);
+        console.log(userSecurity);
+
+        const followedSecurity = await (
+          await SecurityModel.findAll()
+        )
+          .filter((security) => userSecurity.includes(security.id))
+          .map((security) => [
+            {
+              text: security.securityName,
+              callback_data: security.id,
+              // callback_data: { id: security.id, name: security.securityName },
+            },
+          ]);
+
+        const followedSecurityOptions = await {
+          reply_markup: JSON.stringify({
+            inline_keyboard: [...followedSecurity],
+          }),
+        };
+
+        states[chatID] = await {
+          runtime: "callback_data",
+          command: "removeFollowedSecurity",
+        };
+        console.log("removeFollowedSecurity");
+        // console.log(unfollowedSecurityOptions);
+        // console.log(BotOptions.adminActionEditSecurities);
+        return bot.editMessageText(
+          "Выберите валюту которую хотите перестать отслеживать",
+          {
+            chat_id: chatID,
+            message_id: messageID,
+            ...followedSecurityOptions,
+          }
+        );
+      } catch (e) {
+        const eMsg = await "Подключение к БД не выполнилось!\n";
+        await console.error(`${eMsg}\n${e}\n`);
+        await bot.sendMessage(chatID, eMsg);
+        return bot.editMessageText("Что вы хотите добавить в отслеживаемые", {
+          chat_id: chatID,
+          message_id: messageID,
+          ...BotOptions.allActionShowAllUnfollowed,
+        });
+      }
     }
 
     if (states[chatID] && states[chatID].runtime == "callback_data") {
@@ -949,6 +1321,40 @@ const start = async () => {
             chat_id: chatID,
             message_id: messageID,
             ...BotOptions.adminActionEditCurrencies,
+          });
+        } catch (e) {
+          const eMsg =
+            await "Неудалось обратиться к БД для редактирования валютной пары!\n";
+          await console.error(`${eMsg}\n${e}\n`);
+          return bot.sendMessage(chatID, eMsg);
+        }
+      }
+
+      if (states[chatID].command == "editSecurity") {
+        states[chatID] = await {
+          messageID: messageID,
+          securityName: data,
+        };
+        return bot.editMessageText("Что вы хотите отредактировать в записи:", {
+          chat_id: chatID,
+          message_id: messageID,
+          ...BotOptions.adminActionEditSecuritiesFields,
+        });
+      }
+
+      if (states[chatID].command == "removeSecurity") {
+        states[chatID] = await {};
+        try {
+          const security = await SecurityModel.findOne({
+            where: { securityName: data },
+          });
+          console.log(security);
+          await security.destroy();
+
+          return bot.editMessageText("Выберите действия с базой валютных пар", {
+            chat_id: chatID,
+            message_id: messageID,
+            ...BotOptions.adminActionEditSecurities,
           });
         } catch (e) {
           const eMsg =
@@ -1000,6 +1406,45 @@ const start = async () => {
         }
       }
       if (states[chatID].command == "addUnfollowedSecurity") {
+        try {
+          console.log(data);
+          await UserSecuritiesModel.create({
+            chatID: chatID,
+            securityID: data /*.id*/,
+          });
+
+          await SecurityModel.findOne({
+            where: { id: data },
+          }).then(
+            (security) =>
+              (users[chatID] = {
+                ...users[chatID],
+                securities: [
+                  ...users[chatID]?.securities,
+                  security.securityName /*.name*/,
+                ],
+              })
+          );
+          // await console.log(await securityName);
+
+          await console.log(await users);
+          // return bot.
+          return bot.editMessageText("Что вы хотите добавить в отслеживаемые", {
+            chat_id: chatID,
+            message_id: messageID,
+            ...BotOptions.allActionShowAllUnfollowed,
+          });
+        } catch (e) {
+          if (e.name == "SequelizeUniqueConstraintError") {
+            console.error(e);
+          } else {
+            const eMsg =
+              await "Неудалось создать запись нового пользователя в БД! попробуйте позже!\n";
+            await console.error(`${eMsg}\n${chatID}\n${e}\n`);
+            console.log(e.name);
+            return bot.sendMessage(chatID, eMsg);
+          }
+        }
       }
       if (states[chatID].command == "removeFollowedCurrency") {
         try {
@@ -1053,6 +1498,58 @@ const start = async () => {
           }
         }
       }
+      if (states[chatID].command == "removeFollowedSecurity") {
+        try {
+          // await UserСurrenciesModel.create({
+          //   chatID: chatID,
+          //   currencyID: data,
+          // });
+          // return bot.
+          // console.log("callback removeFollowedCurrency");
+          const userSecurity = await UserSecuritiesModel.findOne({
+            where: { chatID: chatID, securityID: data /*.id*/ },
+          });
+          console.log(userSecurity);
+          userSecurity.destroy();
+
+          //const securityName =
+          await SecurityModel.findOne({
+            where: { id: data },
+          }).then(
+            (Security) =>
+              (users[chatID] = {
+                ...users[chatID],
+                securities: users[chatID].securities.filter(
+                  (security) => security != Security.securityName /*.name*/
+                ),
+              })
+          );
+          //currencyName;
+          // console.log(currencyName);
+
+          console.log(users);
+          // console.log("MSG:\n", msg);
+
+          return bot.editMessageText(
+            "Что вы хотите добавить в перестать отслеживать",
+            {
+              chat_id: chatID,
+              message_id: messageID,
+              ...BotOptions.allActionShowFollowed,
+            }
+          );
+        } catch (e) {
+          if (e.name == "SequelizeUniqueConstraintError") {
+            console.error(e);
+          } else {
+            const eMsg =
+              await "Неудалось создать запись нового пользователя в БД! попробуйте позже!\n";
+            await console.error(`${eMsg}\n${chatID}\n${e}\n`);
+            console.log(e.name);
+            return bot.sendMessage(chatID, eMsg);
+          }
+        }
+      }
     }
     // if (states[chatID] && states[chatID].command == "addCurrency") {
     //   states[chatID].command = await "";
@@ -1076,7 +1573,7 @@ const start = async () => {
     //   return bot.editMessageText("Выберите действия с базой валютных пар", {
     //     chat_id: chatID,
     //     message_id: states[chatID].messageID,
-    //     ...BotOptions.adminActionEditCurrencies,
+    //     ...BotOptions.adminActionEditSecurities,
     //   });
     // }
   });
