@@ -1,39 +1,39 @@
 import { CronTask } from "./cron_task";
-import { MoexCurrency } from "./moex";
+import { MoexCurrency, MoexSecurity } from "./moex";
 import sequelize from "./db_connection";
 import { Сurrencies as CurrencyModel } from "./db_models";
 
-const start = async () => {
-  try {
-    await sequelize.authenticate();
-    await sequelize.sync();
-  } catch (e) {
-    console.error("Подключение к БД не выполнилось!\n", e);
-  }
+// const start = async () => {
+//   try {
+//     await sequelize.authenticate();
+//     await sequelize.sync();
+//   } catch (e) {
+//     console.error("Подключение к БД не выполнилось!\n", e);
+//   }
 
-  const currenciesInfo = (await CurrencyModel.findAll()).map((currency) => {
-    return { name: currency.currencyName, API: currency.currencyAPI };
-  });
+//   const currenciesInfo = (await CurrencyModel.findAll()).map((currency) => {
+//     return { name: currency.currencyName, API: currency.currencyAPI };
+//   });
 
-  console.log(currenciesInfo);
+//   console.log(currenciesInfo);
 
-  const currencyData = {};
-  console.log("CURRENCY\n", currencyData);
-  const moexCurrencyTask = async (currenciesInfo, currencyData) =>
-    await currenciesInfo.map(async (currency) =>
-      MoexCurrency(currency.API, currency.name, currencyData)
-    );
+//   const currencyData = {};
+//   console.log("CURRENCY\n", currencyData);
+//   const moexCurrencyTask = async (currenciesInfo, currencyData) =>
+//     await currenciesInfo.map(async (currency) =>
+//       MoexCurrency(currency.API, currency.name, currencyData)
+//     );
 
-  const consoleOutTask = async (currencyData) => {
-    console.log("CURRENCY\n", currencyData);
-    // for (const currency in currencyData) {
-    //   console.log(`${currencyData[currency
-    // }
-  };
+//   const consoleOutTask = async (currencyData) => {
+//     console.log("CURRENCY\n", currencyData);
+//     // for (const currency in currencyData) {
+//     //   console.log(`${currencyData[currency
+//     // }
+//   };
 
-  CronTask(moexCurrencyTask, 10, 19, currenciesInfo, currencyData).start();
-  CronTask(consoleOutTask, 10, 19, currencyData).start();
-};
+//   CronTask(moexCurrencyTask, 10, 19, currenciesInfo, currencyData).start();
+//   CronTask(consoleOutTask, 10, 19, currencyData).start();
+// };
 
 // start();
 
@@ -58,7 +58,30 @@ const MoexCurrencyUpdateTask = async (
   );
 };
 
-export { MoexCurrencyUpdateTask };
+const MoexSecurityUpdateTask = async (
+  securityDBInfo,
+  securityLocalData,
+  from,
+  to
+) => {
+  const MoexSecurityTask = async (securityInfo, securityData) =>
+    await Promise.all(
+      securityInfo.map(
+        async (security) =>
+          await MoexSecurity(security.API, security.name, securityData)
+      )
+    );
+
+  return CronTask(
+    MoexSecurityTask,
+    from,
+    to,
+    securityDBInfo,
+    securityLocalData
+  );
+};
+
+export { MoexCurrencyUpdateTask, MoexSecurityUpdateTask };
 // const start2 = async () => {
 //   try {
 //     await sequelize.authenticate();
