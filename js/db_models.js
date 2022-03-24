@@ -75,6 +75,54 @@ export const Сurrencies = sequelize.define("Сurrencies", {
   },
 });
 
+export const UserSecurities = sequelize.define("UserSecurities", {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    unique: true,
+    autoIncrement: true,
+    allowNull: false,
+  },
+  chatID: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    required: true,
+    references: {
+      model: "Users",
+      key: "chatID",
+    },
+  },
+  securityID: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    required: true,
+    references: {
+      model: "Securities",
+      key: "id",
+    },
+  },
+});
+
+export const Securities = sequelize.define("Securities", {
+  id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
+    unique: true,
+    allowNull: false,
+    autoIncrement: true,
+  },
+  securityName: {
+    type: DataTypes.STRING(16),
+    allowNull: false,
+    unique: true,
+  },
+  securityAPI: {
+    type: DataTypes.STRING(4),
+    allowNull: false,
+    unique: true,
+  },
+});
+
 export const UserMessages = sequelize.define("UserMessages", {
   chatID: {
     type: DataTypes.INTEGER,
